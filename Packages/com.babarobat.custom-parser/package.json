@@ -2,7 +2,7 @@
   "name": "com.babarobat.custom-parser",
   "version": "1.0.3",
   "displayName": "Custom Parser",
-  "description": "Named-placeholder string template engine for Unity and .NET. Precompiled DLL; see repository for source and documentation.",
+  "description": "Named placeholders for Unity localization and UI strings ({player.gold_balance}, {weapons[0].name}) — alternative to string.Format {0}/{1}. Precompiled DLL; full docs on GitHub.",
   "unity": "2021.2",
   "documentationUrl": "https://github.com/babarobat/custom-parser/blob/master/docs/SPEC.md",
   "changelogUrl": "https://github.com/babarobat/custom-parser/releases",

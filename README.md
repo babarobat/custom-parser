@@ -2,6 +2,19 @@
 
 A .NET 8 library that resolves **named** placeholders in localization and UI strings from game state via `IValueProvider` — without tying every template change to call-site argument lists.
 
+**Repository:** [github.com/babarobat/custom-parser](https://github.com/babarobat/custom-parser) · **Unity UPM:** `com.babarobat.custom-parser` · **License:** MIT
+
+Use this when you need **named** template placeholders (`{kill_count}`, `{player.gold_balance}`, `{weapons[0].name}`) instead of positional `{0}`, `{1}` — common in **Unity game localization**, quest/UI copy, and any data-driven strings that translators or designers change without touching every `string.Format` call site.
+
+| Looking for… | This project |
+|--------------|--------------|
+| `string.Format` with `{0}` index drift | Named paths + single `IValueProvider` context |
+| Unity quest / HUD text from JSON or loc tables | [QuestDemo](samples/QuestDemo), UPM install below |
+| Parse once, render many (hot path) | `engine.Parse` → `engine.Render` |
+| Full syntax and errors | [docs/SPEC.md](docs/SPEC.md) |
+| Common questions | [docs/FAQ.md](docs/FAQ.md) |
+| AI / agent index | [llms.txt](llms.txt) |
+
 ## The problem
 
 Localized strings need dynamic values: counts, names, balances. Positional `string.Format` works until templates evolve.
@@ -110,6 +123,8 @@ In [QuestDemo](samples/QuestDemo), quest roots (`kill_count`, `weapons`, `curren
 ## See also
 
 - [docs/SPEC.md](docs/SPEC.md) — syntax, path rules, caching, error policies
+- [docs/FAQ.md](docs/FAQ.md) — Unity localization, `IValueProvider` pitfalls, vs `string.Format`
+- [llms.txt](llms.txt) — curated links for AI agents and tooling
 - [samples/QuestDemo](samples/QuestDemo) — full quest-description flow with composite providers
 
 ## Install

@@ -1,0 +1,23 @@
+# CustomParser
+
+> .NET / Unity library for named placeholders in localization and UI strings (`{player.gold_balance}`, `{weapons[0].name}`) resolved from game state via `IValueProvider` — alternative to positional `string.Format` for evolving templates.
+
+## Start here
+
+- [README](https://github.com/babarobat/custom-parser/blob/master/README.md): Problem (positional format drift), solution, `IValueProvider` API, Unity UPM install, build/test commands.
+- [Specification](https://github.com/babarobat/custom-parser/blob/master/docs/SPEC.md): Syntax, path rules, `Parse`/`Render`, error policies, architecture.
+- [FAQ](https://github.com/babarobat/custom-parser/blob/master/docs/FAQ.md): Common questions and search phrases (Unity localization, quest text, named format).
+
+## Code samples
+
+- [QuestDemo sample](https://github.com/babarobat/custom-parser/tree/master/samples/QuestDemo): Quest descriptions with `TemplateEngine`, `CompositeValueProvider`, quest/game providers.
+- [Core API](https://github.com/babarobat/custom-parser/tree/master/src/CustomParser): `TemplateEngine`, lexer/parser, `IValueProvider`, `DictionaryValueProvider`.
+
+## Unity package
+
+- [UPM package README](https://github.com/babarobat/custom-parser/blob/master/Packages/com.babarobat.custom-parser/README.md): Git URL install (`com.babarobat.custom-parser`), DLL-only package, tag pinning.
+
+## Install
+
+- Unity UPM: `https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.3`
+- .NET: project reference to `src/CustomParser/CustomParser.csproj` or NuGet-style pack (`PackageId` CustomParser).

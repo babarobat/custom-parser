@@ -9,9 +9,9 @@
     <IsPackable>true</IsPackable>
     <PackageId>CustomParser</PackageId>
     <Version>1.0.0</Version>
-    <Description>Named-placeholder string template engine for .NET (lexer, parser, resolver, formatter).</Description>
+    <Description>Named-placeholder string templates for .NET and Unity — alternative to positional string.Format for localization, quest text, and UI strings. Resolves {player.health}, {items[0].name} via IValueProvider.</Description>
     <Authors>custom-parser contributors</Authors>
-    <PackageTags>templating;string-format;placeholders</PackageTags>
+    <PackageTags>templating;string-format;placeholders;localization;unity;game-development;i18n;quest-text;named-placeholders</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/babarobat/custom-parser</PackageProjectUrl>
     <RepositoryUrl>https://github.com/babarobat/custom-parser.git</RepositoryUrl>
