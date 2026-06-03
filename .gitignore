@@ -20,17 +20,22 @@
 *.snupkg
 **/packages/*
 !**/packages/build/
+# Unity UPM package (capital P; Windows gitignore is case-insensitive)
+!Packages/com.babarobat.custom-parser/
+!Packages/com.babarobat.custom-parser/**
 project.lock.json
 project.fragment.lock.json
 artifacts/
 
 ## .NET
 *.dll
+!Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll
 *.exe
 *.pdb
 *.cache
 *.ilk
 *.meta
+!Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll.meta
 *.obj
 *.iobj
 *.ipdb

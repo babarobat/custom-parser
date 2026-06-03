@@ -109,11 +109,25 @@ dotnet run --project samples/QuestDemo/QuestDemo.csproj
 
 The library multi-targets **netstandard2.0** (Unity) and **net8.0** (modern .NET).
 
-**Prebuilt DLL:** After `dotnet build src/CustomParser/CustomParser.csproj`, copy:
+### Unity (UPM via Git)
 
-`src/CustomParser/bin/Debug/netstandard2.0/CustomParser.dll`
+Add to your project `Packages/manifest.json` **dependencies**:
 
-into your Unity project (for example `Assets/Plugins/CustomParser/`). Use the **Release** output path when shipping.
+```json
+"com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.0"
+```
+
+This installs a **DLL-only** package (`Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll`) — not editable source in the Unity tree. To change behavior, fork the [repository](https://github.com/babarobat/custom-parser) or reference the .NET project directly. **JetBrains Rider** can still show decompiled C# when you navigate into the assembly for reading.
+
+Requires Unity **2021.2** or newer (see package `package.json`).
+
+### Manual DLL or source embed
+
+**Prebuilt DLL:** After `dotnet build src/CustomParser/CustomParser.csproj -c Release -f netstandard2.0`, copy:
+
+`src/CustomParser/bin/Release/netstandard2.0/CustomParser.dll`
+
+into your Unity project (for example `Assets/Plugins/CustomParser/`).
 
 **Source embed:** Add the `src/CustomParser` folder (all `.cs` files, including `Polyfills/`) to a Unity assembly definition or `Assets/Scripts`. Unity 2021.2+ with Roslyn supports the language features used (C# 10, records).
 
