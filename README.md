@@ -85,6 +85,28 @@ foreach (var q in game.Quests)
 
 For flat key–value maps only, `DictionaryValueProvider` covers simple `{key}` roots without a custom provider.
 
+## IValueProvider: Value, Member, Index
+
+When you implement `IValueProvider`, the engine resolves each `{…}` path in steps — not as one string lookup.
+
+| Method | When it runs |
+|--------|----------------|
+| **TryGetValue** | Root key only: first name after `{`, before the first `.` or `[` |
+| **TryGetMember** | Each `.field` on the current object |
+| **TryGetIndex** | Each `[n]` on the current list or array |
+
+**Examples:**
+
+- `{kill_count}` → `TryGetValue("kill_count")`
+- `{player.gold_balance}` → `TryGetValue("player")` → `TryGetMember(…, "gold_balance")`
+- `{weapons[0]}` → `TryGetValue("weapons")` → `TryGetIndex(…, 0)`
+- `{currencies[0].amount}` → `TryGetValue("currencies")` → `TryGetIndex(…, 0)` → `TryGetMember(…, "amount")`
+- `{player.battle_pass.achievements[2].target.amount}` → Value(`"player"`) → Member(`"battle_pass"`) → Member(`"achievements"`) → Index(`2`) → Member(`"target"`) → Member(`"amount"`)
+
+**Common mistake:** do not handle the full path inside `TryGetValue` (e.g. `case "player.gold_balance"`). Map only root keys there; return the object and let the engine call `TryGetMember` / `TryGetIndex` for the rest.
+
+In [QuestDemo](samples/QuestDemo), quest roots (`kill_count`, `weapons`, `currencies`) live in `QuestValueProvider`; game roots (`player`) in `ModelValueProvider`. `CompositeValueProvider` merges both into one render context.
+
 ## See also
 
 - [docs/SPEC.md](docs/SPEC.md) — syntax, path rules, caching, error policies
