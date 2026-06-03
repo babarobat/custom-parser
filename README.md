@@ -1,105 +1,100 @@
 # CustomParser
 
-A .NET 8 library for substituting values into string templates with **named** placeholders in curly braces — similar to `string.Format`, but with paths like `{player.health}` and `{items[0].name}`.
+A .NET 8 library that resolves **named** placeholders in localization and UI strings from game state via `IValueProvider` — without tying every template change to call-site argument lists.
 
-## Install
+## The problem
 
-From NuGet:
+Localized strings need dynamic values: counts, names, balances. Positional `string.Format` works until templates evolve.
 
-```bash
-dotnet add package CustomParser
+**Locale file (positional):**
+
+```
+Kill slimes with {0} using {1} or {2}.
 ```
 
-Or reference the library project in this repository:
-
-```bash
-dotnet add reference src/CustomParser/CustomParser.csproj
-```
-
-## Quick start
+**Call site — values passed by index:**
 
 ```csharp
-using System.Globalization;
-using CustomParser;
-using CustomParser.Resolver;
+string.Format(quest.Description, killCount, weapons[0], weapons[1]);
+```
 
+Add a third placeholder and you update the string **and** every caller. Reorder slots for translation and the indices drift. Designers cannot rename or extend placeholders without a C# pass; the template and code stay coupled by position, not meaning.
+
+## The solution
+
+CustomParser uses **named** paths in `{…}` — for example `{kill_count}`, `{player.gold_balance}`, `{currencies[0].amount}`. At render time the engine walks each path and asks an `IValueProvider` for values.
+
+**Same intent (named, from [QuestDemo](samples/QuestDemo)):**
+
+```
+Kill slimes with {kill_count} using {weapons[0]} or {weapons[1]}.
+Collect {currencies[0].amount} {currencies[0].name}. Current gold: {player.gold_balance}.
+```
+
+**Call site — one pattern, no argument list:**
+
+```csharp
 var engine = new TemplateEngine();
-var context = new DictionaryValueProvider(new Dictionary<string, object?>
-{
-    ["player_health"] = 85.7,
-    ["player_health_max"] = 100,
-});
-
-var text = engine.Format(
-    "HP: {player_health:F0}/{player_health_max:F0}",
-    context,
-    CultureInfo.InvariantCulture);
-// "HP: 86/100"
+var context = new QuestGameContext(game, quest);
+var text = engine.Format(quest.Description, context);
 ```
 
-For a hot path where the same template is rendered many times, parse once and render repeatedly:
+Map root keys once in providers; after that, templates can change in data or loc files without editing every `Format` call. Extend a provider only when a **new** root key appears.
+
+**Quest-scoped roots** (`QuestValueProvider`):
 
 ```csharp
-var compiled = engine.Parse("HP: {player_health:F0}/{player_health_max:F0}");
-var text = engine.Render(compiled, context, CultureInfo.InvariantCulture);
-```
-
-See [docs/SPEC.md](docs/SPEC.md) for syntax, architecture, and error policies.
-
-## Quest sample
-
-The `samples/QuestDemo` project shows game models and custom providers (`QuestValueProvider`, `QuestGameContext`) that resolve quest description templates:
-
-```bash
-dotnet run --project samples/QuestDemo/QuestDemo.csproj
-```
-
-## Implementing `IValueProvider`
-
-The resolver calls your provider while walking each placeholder path:
-
-| Method | When it is used |
-|--------|-----------------|
-| `TryGetValue` | Root identifier in a path (e.g. `player` in `{player.health}`) |
-| `TryGetMember` | After a `.member` segment |
-| `TryGetIndex` | After an `[index]` segment |
-
-```csharp
-using CustomParser.Resolver;
-
-public sealed class MyValueProvider : IValueProvider
+public bool TryGetValue(string key, out object? value)
 {
-    public bool TryGetValue(string key, out object? value)
+    switch (key)
     {
-        // Map root keys to objects (dictionaries, models, etc.)
-        return /* lookup */ false;
+        case "kill_count" when _quest is KillEnemyQuest kill:
+            value = kill.KillCount; return true;
+        case "weapons" when _quest is KillEnemyQuest k:
+            value = k.Weapons; return true;
+        case "currencies" when _quest is CollectCurrencyQuest c:
+            value = c.Currencies; return true;
+        default:
+            value = null; return false;
     }
-
-    public bool TryGetIndex(object? target, int index, out object? value) =>
-        MemberAccessor.TryGetIndex(target, index, out value);
-
-    public bool TryGetMember(object? target, string member, out object? value) =>
-        MemberAccessor.TryGetMember(target, member, out value);
 }
 ```
 
-`DictionaryValueProvider` is enough when all roots live in a dictionary. For domain-specific roots (quests, player state), implement `TryGetValue` and delegate `TryGetIndex` / `TryGetMember` to `MemberAccessor` for lists, arrays, and reflection-friendly objects — as in `samples/QuestDemo/Resolver/QuestValueProvider.cs`. Combine multiple providers with `CompositeValueProvider` or a façade like `QuestGameContext`.
+**Game-scoped roots** (`ModelValueProvider`):
 
-Configure render-time behavior with `ErrorPolicy` on `TemplateEngine` (`Throw`, `Empty`, `KeepPlaceholder`).
-
-## Documentation
-
-- [docs/SPEC.md](docs/SPEC.md) — full syntax and architecture specification
-
-## Repository layout
-
+```csharp
+case "player":
+    value = _game.Player; return true;
 ```
-custom-parser/
-├── CustomParser.sln
-├── docs/SPEC.md
-├── src/CustomParser/          # NuGet package (namespace CustomParser)
-├── samples/QuestDemo/         # quest description demo
-└── tests/CustomParser.Tests/
+
+**Composite context** (`QuestGameContext`):
+
+```csharp
+_inner = new CompositeValueProvider(
+    new QuestValueProvider(quest),
+    new ModelValueProvider(game));
+```
+
+**Parse once, render many** (shared template shape):
+
+```csharp
+var compiled = engine.Parse(quest.Description);
+foreach (var q in game.Quests)
+    Console.WriteLine(engine.Render(compiled, new QuestGameContext(game, q)));
+```
+
+For flat key–value maps only, `DictionaryValueProvider` covers simple `{key}` roots without a custom provider.
+
+## See also
+
+- [docs/SPEC.md](docs/SPEC.md) — syntax, path rules, caching, error policies
+- [samples/QuestDemo](samples/QuestDemo) — full quest-description flow with composite providers
+
+## Install
+
+```bash
+dotnet add package CustomParser
+# or: dotnet add reference src/CustomParser/CustomParser.csproj
 ```
 
 ## Build and test
@@ -107,6 +102,7 @@ custom-parser/
 ```bash
 dotnet build CustomParser.sln
 dotnet test CustomParser.sln
+dotnet run --project samples/QuestDemo/QuestDemo.csproj
 ```
 
 ## License
