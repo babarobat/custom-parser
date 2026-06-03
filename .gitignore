@@ -35,7 +35,7 @@ artifacts/
 *.cache
 *.ilk
 *.meta
-!Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll.meta
+!Packages/com.babarobat.custom-parser/**/*.meta
 *.obj
 *.iobj
 *.ipdb
