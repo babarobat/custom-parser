@@ -92,9 +92,7 @@ For flat key–value maps only, `DictionaryValueProvider` covers simple `{key}` 
 
 ## Install
 
-The library targets **netstandard2.0** (Unity) and **net8.0** (.NET). **Unity UPM** is the supported consumer install today; NuGet is not on the gallery yet.
-
-### Unity (primary)
+### Unity (UPM via Git)
 
 Add to your project `Packages/manifest.json` **dependencies**:
 
@@ -102,33 +100,19 @@ Add to your project `Packages/manifest.json` **dependencies**:
 "com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.0"
 ```
 
-This installs a **DLL-only** package — not editable source in the Unity tree. Fork the [repository](https://github.com/babarobat/custom-parser) or embed source if you need to change behavior. **JetBrains Rider** can show decompiled C# when you navigate into the assembly.
+This installs a **DLL-only** package (`Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll`) — not editable source in the Unity tree. To change behavior, fork the [repository](https://github.com/babarobat/custom-parser) or embed the `src/CustomParser` sources in your project. **JetBrains Rider** can still show decompiled C# when you navigate into the assembly for reading.
 
-Requires Unity **2021.2+** (see package `package.json`). For nested paths in Unity, implement `TryGetMember` / `TryGetIndex` on providers (see QuestDemo); flat `{key}` roots work with `DictionaryValueProvider`.
+Requires Unity **2021.2** or newer (see package `package.json`).
 
-### .NET from this repo (developers)
+### Optional: monorepo development
 
-Clone the monorepo and reference the project:
-
-```bash
-dotnet add reference path/to/custom-parser/src/CustomParser/CustomParser.csproj
-```
-
-Or in your `.csproj`:
+When developing this library or running samples/tests **in this repository**, reference the project directly — **not** for external Unity consumers:
 
 ```xml
-<ProjectReference Include="..\custom-parser\src\CustomParser\CustomParser.csproj" />
+<ProjectReference Include="src/CustomParser/CustomParser.csproj" />
 ```
 
-### NuGet
-
-**Not published yet** — [nuget.org/packages/CustomParser](https://www.nuget.org/packages/CustomParser) returns 404. When it is on the gallery:
-
-```bash
-dotnet add package CustomParser
-```
-
-Maintainers: `dotnet pack src/CustomParser/CustomParser.csproj -c Release`, then push the `.nupkg` per [Publish a package to NuGet.org](https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package).
+Adjust the relative path from your `.csproj` (for example `samples/QuestDemo/QuestDemo.csproj` uses `..\..\src\CustomParser\CustomParser.csproj`).
 
 ## Build and test
 
