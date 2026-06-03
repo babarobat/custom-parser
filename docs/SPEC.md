@@ -7,12 +7,16 @@
 Библиотека для подстановки значений в строковые шаблоны — аналог `string.Format`, но с **именованными** плейсхолдерами в фигурных скобках.
 
 ```csharp
-var template = engine.Parse("HP: {player_health:F0}, weapon: {weapons[0].name}");
-var result = engine.Render(template, context, CultureInfo.InvariantCulture);
+var text = engine.Format(
+    "HP: {player_health:F0}, weapon: {weapons[0].name}",
+    context,
+    CultureInfo.InvariantCulture);
 // "HP: 85, weapon: Sword"
 ```
 
-**Ключевой принцип:** разбор выполняется один раз (`Parse`), рендер — многократно (`Render`). Результат `Parse` — кэшируемый `CompiledTemplate`.
+**Для потребителя библиотеки** достаточно одного вызова `Format(template, context)` — не нужно знать про `Parse` / `Render` (см. §3.6).
+
+**Для повторного использования одного шаблона** (горячий путь): `Parse` один раз → `Render` многократно; результат `Parse` — кэшируемый `CompiledTemplate` (§3.5).
 
 ---
 
@@ -79,7 +83,8 @@ accessPath   ::= identifier ( ('.' identifier) | ('[' integer_literal ']') )*
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  Engine / Orchestrator                                  │
-│  Parse(template) → CompiledTemplate                     │
+│  Format(template, context, culture) → string  [client]  │
+│  Parse(template) → CompiledTemplate  [perf path]        │
 │  Render(compiled, context, culture) → string            │
 └──────────┬──────────────────────────────────────────────┘
            │
@@ -131,8 +136,57 @@ AST (MVP):
 ### 3.5. Engine / Orchestrator
 
 - Координирует слои.
-- `Parse` → `CompiledTemplate` (список сегментов: литерал | resolved-placeholder-descriptor).
-- `Render` → конкатенация литералов + отформатированных значений.
+- **`Format`** (§3.6) — основной клиентский вход: внутри `Parse` + `Render` за один вызов.
+- **`Parse`** → `CompiledTemplate` (список сегментов: литерал | resolved-placeholder-descriptor) — **продвинутый / performance path**.
+- **`Render`** → конкатенация литералов + отформатированных значений — **продвинутый / performance path**.
+
+### 3.6. Client API (удобный вход для потребителей)
+
+Потребитель передаёт только:
+
+1. **Строку шаблона** с плейсхолдерами `{...}` (например, `quest.Description` из данных).
+2. **`IValueProvider` контекст** — откуда читаются значения для плейсхолдеров.
+
+Внутренний поток `Parse` → `Render` **не обязан** быть виден клиенту.
+
+#### Метод `Format`
+
+**Сигнатура (instance, на `TemplateEngine`):**
+
+```csharp
+public string Format(string template, IValueProvider context, CultureInfo? culture = null);
+```
+
+| Параметр | Назначение |
+|---|---|
+| `template` | Исходная строка с `{placeholder}` |
+| `context` | Провайдер значений на время одного рендера (см. ниже) |
+| `culture` | Культура для `:format` (`F0`, `N2`, даты и т.д.); `null` → `CultureInfo.CurrentCulture` |
+
+**Поведение:** эквивалентно `Render(Parse(template), context, culture)`. Политика ошибок — из конструктора `TemplateEngine` (`ErrorPolicy`).
+
+**Статический vs instance:** зафиксирован **instance-метод** — политика ошибок и будущие настройки движка привязаны к экземпляру. Общий сценарий: один shared `TemplateEngine` (например, с `ErrorPolicy.KeepPlaceholder` для UI) или локальный экземпляр с дефолтами.
+
+**Кэширование `CompiledTemplate`:** в MVP `Format` может парсить шаблон при каждом вызове. Опционально позже — внутренний кэш по строке шаблона или явный API «скомпилировать один раз» через `Parse` + `Render`.
+
+#### Контекст для клиента
+
+Клиент собирает **один** `IValueProvider` на область рендера (например, текущая игра + активный квест), а не отдельные словари на каждый плейсхолдер.
+
+```csharp
+// Пример: описание квеста
+var text = engine.Format(quest.Description, context);
+```
+
+**Будущее (не MVP):** составной провайдер или тип вроде `QuestGameContext`, который объединяет корень квеста (`kill_count`, `weapons[0]`, …) и игровой корень (`player.gold_balance`) в одном `IValueProvider` — клиент по-прежнему передаёт один `context`.
+
+#### Когда нужен `Parse` / `Render`
+
+| Сценарий | API |
+|---|---|
+| Разовая подстановка (описания, подсказки, лог) | `Format` |
+| Один шаблон рендерится много раз с разным контекстом | `Parse` → сохранить `CompiledTemplate` → `Render` в цикле |
+| Кэш скомпилированных шаблонов в игре | `Parse` при загрузке, `Render` при обновлении UI |
 
 ---
 
@@ -149,6 +203,10 @@ public sealed class TemplateEngine
 {
     public TemplateEngine(ErrorPolicy errorPolicy = ErrorPolicy.Throw);
 
+    /// <summary>Основной клиентский API: Parse + Render за один вызов.</summary>
+    public string Format(string template, IValueProvider context, CultureInfo? culture = null);
+
+    /// <summary>Performance path: разбор один раз, рендер многократно.</summary>
     public CompiledTemplate Parse(string template);
     public string Render(CompiledTemplate compiled, IValueProvider context, CultureInfo? culture = null);
 }
@@ -238,10 +296,11 @@ internal static class ValueFormatter
 
 ## 6. Культура
 
-`CultureInfo` передаётся в `Render(compiled, context, culture)`.
+`CultureInfo` передаётся в `Format(..., culture)` и `Render(..., culture)`.
 
 - `culture == null` → `CultureInfo.CurrentCulture`.
 - Используется только в `Formatter` (числа, даты).
+- **Когда важно для клиента:** плейсхолдеры с числовым/денежным форматом (`{price:N2}`, `{amount:C}`) — разделители тысяч и символ валюты зависят от культуры; для фиксированного отображения (отладка, экспорт) передайте `CultureInfo.InvariantCulture` явно.
 
 ---
 
@@ -258,7 +317,8 @@ internal static class ValueFormatter
 | `{arr[key]}` string / expr index | | ✅ |
 | `:format` | ✅ | |
 | `{{` / `}}` | ✅ | |
-| Parse once / Render many | ✅ | |
+| `Format` (client sugar: Parse + Render) | ✅ | |
+| Parse once / Render many | ✅ | (advanced path) |
 | `IValueProvider` | ✅ | |
 | `ErrorPolicy` | ✅ | |
 | `CultureInfo` | ✅ | |
@@ -351,7 +411,8 @@ custom-parser/
 ## 10. Зафиксированные решения (чеклист)
 
 - [x] Lexer — state machine, не regex
-- [x] Parse once → `CompiledTemplate`, Render many
+- [x] Client API: `Format(template, context)` — Parse + Render без знания внутренностей
+- [x] Parse once → `CompiledTemplate`, Render many (performance path)
 - [x] `IValueProvider` + `DictionaryValueProvider` по умолчанию
 - [x] `ErrorPolicy`: Throw / Empty / KeepPlaceholder
 - [x] `CultureInfo` в `Render`
@@ -367,6 +428,14 @@ custom-parser/
 ## Appendix A. Quest description templates (sample data)
 
 Quest `Description` strings in `Models` use **snake_case** logical placeholder paths for localization (`kill_count`, `weapons`, `currencies`, `player.gold_balance`). They need not match C# property names (`KillCount`, `GoldBalance`); a future quest-aware resolver may alias or bind case-insensitively.
+
+**Рендер в клиенте:** один вызов `Format` с контекстом, покрывающим и квест, и игру:
+
+```csharp
+var description = engine.Format(quest.Description, context);
+```
+
+Здесь `context` — один `IValueProvider` на область «игра + текущий квест» (см. §3.6); отдельно вызывать `Parse`/`Render` для типичного UI не требуется.
 
 | Scope | Convention | Example |
 |---|---|---|

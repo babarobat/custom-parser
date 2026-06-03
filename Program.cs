@@ -1,7 +1,13 @@
-﻿using custom_parser.Models;
+﻿using custom_parser;
+using custom_parser.Models;
+using custom_parser.Resolver;
 
 var game = GameModel.CreateSample();
-Console.WriteLine($"Player health: {game.Player.Health}, gold: {game.Player.GoldBalance}");
-Console.WriteLine($"Quests: {game.Quests.Count}");
+var engine = new TemplateEngine();
+
 foreach (var quest in game.Quests)
-    Console.WriteLine(quest.Description);
+{
+    var context = new QuestGameContext(game, quest);
+    var formatted = engine.Format(quest.Description, context);
+    Console.WriteLine($"{quest.Title}: {formatted}");
+}
