@@ -13,6 +13,10 @@
     <Authors>custom-parser contributors</Authors>
     <PackageTags>templating;string-format;placeholders</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/babarobat/custom-parser</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/babarobat/custom-parser.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
