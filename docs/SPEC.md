@@ -1,10 +1,10 @@
-# Спецификация: Custom String Template Parser
+# Specification: Custom String Template Parser
 
-> Авторитетный документ архитектурных решений. Все реализации должны следовать этой спецификации.
+> Authoritative document for architectural decisions. All implementations must follow this specification.
 
-## 1. Назначение
+## 1. Purpose
 
-Библиотека для подстановки значений в строковые шаблоны — аналог `string.Format`, но с **именованными** плейсхолдерами в фигурных скобках.
+A library for substituting values into string templates — similar to `string.Format`, but with **named** placeholders in curly braces.
 
 ```csharp
 var text = engine.Format(
@@ -14,17 +14,17 @@ var text = engine.Format(
 // "HP: 85, weapon: Sword"
 ```
 
-**Для потребителя библиотеки** достаточно одного вызова `Format(template, context)` — не нужно знать про `Parse` / `Render` (см. §3.6).
+**For library consumers**, a single `Format(template, context)` call is sufficient — no need to know about `Parse` / `Render` (see §3.6).
 
-**Для повторного использования одного шаблона** (горячий путь): `Parse` один раз → `Render` многократно; результат `Parse` — кэшируемый `CompiledTemplate` (§3.5).
+**For reusing the same template** (hot path): `Parse` once → `Render` many times; the result of `Parse` is a cacheable `CompiledTemplate` (§3.5).
 
 ---
 
-## 2. Синтаксис (MVP)
+## 2. Syntax (MVP)
 
-### 2.1. Лексическая структура
+### 2.1. Lexical structure
 
-Шаблон — последовательность **литералов** и **плейсхолдеров**.
+A template is a sequence of **literals** and **placeholders**.
 
 ```
 template     ::= segment*
@@ -33,52 +33,52 @@ literal      ::= ( any char except unescaped '{' ) | "{{" | "}}"
 placeholder  ::= '{' ws? expression ws? ( ':' format )? ws? '}'
 ```
 
-### 2.2. Выражение (expression) — MVP
+### 2.2. Expression — MVP
 
 ```
 expression   ::= accessPath
 accessPath   ::= identifier ( ('.' identifier) | ('[' integer_literal ']') )*
 ```
 
-Корневой `identifier` — ключ в контексте; далее ноль или более сегментов доступа. Сегменты **`.` member** и **`[index]`** могут чередоваться в любом порядке.
+The root `identifier` is a key in the context; zero or more access segments follow. **`.` member** and **`[index]`** segments may alternate in any order.
 
-| Конструкция | Пример | Описание |
+| Construct | Example | Description |
 |---|---|---|
-| Корневой идентификатор | `{player_health}` | Ключ в контексте без сегментов |
-| Доступ к члену | `{player.health}` | Одно или несколько `.member` подряд |
-| Индексный доступ | `{weapons[0]}` | Элемент коллекции по целочисленному индексу |
-| Индекс, затем член | `{weapons[0].name}` | `.member` после `[index]` |
-| Цепочка членов | `{player.stats.health}` | Несколько `.member` подряд |
-| Смешанная цепочка | `{items[0].stats[1].name}` | Произвольное чередование `.` и `[]` |
-| Формат | `{player_health:F2}` | Стандартная .NET-строка формата |
+| Root identifier | `{player_health}` | Context key with no segments |
+| Member access | `{player.health}` | One or more consecutive `.member` segments |
+| Index access | `{weapons[0]}` | Collection element by integer index |
+| Index then member | `{weapons[0].name}` | `.member` after `[index]` |
+| Member chain | `{player.stats.health}` | Multiple consecutive `.member` segments |
+| Mixed chain | `{items[0].stats[1].name}` | Arbitrary alternation of `.` and `[]` |
+| Format | `{player_health:F2}` | Standard .NET format string |
 
-**Правила идентификаторов:** `[a-zA-Z_][a-zA-Z0-9_]*` (ASCII; точка — только разделитель сегментов, не часть имени).
+**Identifier rules:** `[a-zA-Z_][a-zA-Z0-9_]*` (ASCII; dot is a segment separator only, not part of a name).
 
-**Правила индекса (MVP):** только неотрицательное целочисленное литеральное значение (`0`, `1`, `42`). Отрицательные индексы, строковые ключи и выражения внутри `[]` — **не** MVP.
+**Index rules (MVP):** non-negative integer literal only (`0`, `1`, `42`). Negative indices, string keys, and expressions inside `[]` are **not** MVP.
 
-**Правила формата:** всё после **первого** `:` до закрывающей `}` — строка формата. Двоеточия внутри формата допустимы (`{value:hh\\:mm}`). Разделение `:format` выполняется **до** парсинга выражения.
+**Format rules:** everything after the **first** `:` up to the closing `}` is the format string. Colons inside the format are allowed (`{value:hh\\:mm}`). `:format` splitting happens **before** expression parsing.
 
-### 2.3. Экранирование
+### 2.3. Escaping
 
-| Последовательность | Результат |
+| Sequence | Result |
 |---|---|
-| `{{` | литеральный `{` |
-| `}}` | литеральный `}` |
+| `{{` | literal `{` |
+| `}}` | literal `}` |
 
-Одиночная `{` без парной `}` или `{` внутри плейсхолдера — **ошибка парсинга** (политика см. §6).
+A lone `{` without a matching `}` or a `{` inside a placeholder — **parse error** (policy see §5).
 
-### 2.4. Явно **не** входит в MVP
+### 2.4. Explicitly **not** in MVP
 
-| Конструкция | Статус |
+| Construct | Status |
 |---|---|
-| `{items[key]}` — строковый или вычисляемый индекс в `[]` | Future |
-| Вложенные плейсхолдеры `{outer{inner}}` | Future |
-| Арифметика, вызовы функций | Future |
-| Условия, циклы | Future |
+| `{items[key]}` — string or computed index in `[]` | Future |
+| Nested placeholders `{outer{inner}}` | Future |
+| Arithmetic, function calls | Future |
+| Conditionals, loops | Future |
 
 ---
 
-## 3. Архитектура (5 слоёв)
+## 3. Architecture (5 layers)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -97,15 +97,15 @@ accessPath   ::= identifier ( ('.' identifier) | ('[' integer_literal ']') )*
 
 ### 3.1. Lexer
 
-- **Конечный автомат**, не regex.
-- Знает синтаксис, **не** знает данные.
-- Выход: поток токенов `LiteralToken`, `PlaceholderToken` (сырая строка содержимого `{...}` без скобок).
+- **Finite state machine**, not regex.
+- Knows syntax, **does not** know data.
+- Output: token stream of `LiteralToken`, `PlaceholderToken` (raw string content of `{...}` without braces).
 
 ### 3.2. Expression Parser
 
-- Парсит содержимое `PlaceholderToken` в AST.
-- Сначала отделяет `:format`, затем парсит выражение.
-- Узлы AST (MVP): `AccessPathNode` + сегменты `MemberSegment` / `IndexSegment`.
+- Parses `PlaceholderToken` content into an AST.
+- Splits `:format` first, then parses the expression.
+- AST nodes (MVP): `AccessPathNode` + segments `MemberSegment` / `IndexSegment`.
 
 ```
 AST (MVP):
@@ -115,7 +115,7 @@ AST (MVP):
   MemberSegment(member: string)
   IndexSegment(index: int)
 
-  // Примеры:
+  // Examples:
   // {player_health}           → AccessPathNode("player_health", [])
   // {player.stats.health}     → AccessPathNode("player", [Member, Member])
   // {weapons[0].name}         → AccessPathNode("weapons", [Index, Member])
@@ -124,76 +124,78 @@ AST (MVP):
 
 ### 3.3. Resolver
 
-- Обходит AST, читая значения из `IValueProvider`.
-- Знает данные, **не** форматирует строки.
-- Возвращает `object?` (или typed wrapper).
+- Walks the AST, reading values from `IValueProvider`.
+- Knows data, **does not** format strings.
+- Returns `object?` (via `ResolveResult` internally).
 
 ### 3.4. Formatter
 
-- Применяет `IFormattable.ToString(format, culture)` или `ToString()`.
-- Получает `CultureInfo` из `Render`.
+- Applies `IFormattable.ToString(format, culture)` or `ToString()`.
+- Receives `CultureInfo` from `Render`.
 
 ### 3.5. Engine / Orchestrator
 
-- Координирует слои.
-- **`Format`** (§3.6) — основной клиентский вход: внутри `Parse` + `Render` за один вызов.
-- **`Parse`** → `CompiledTemplate` (список сегментов: литерал | resolved-placeholder-descriptor) — **продвинутый / performance path**.
-- **`Render`** → конкатенация литералов + отформатированных значений — **продвинутый / performance path**.
+- Coordinates the layers.
+- **`Format`** (§3.6) — primary client entry: internally `Parse` + `Render` in one call.
+- **`Parse`** → `CompiledTemplate` (segment list: literal | placeholder descriptor) — **advanced / performance path**.
+- **`Render`** → concatenation of literals + formatted values — **advanced / performance path**.
 
-### 3.6. Client API (удобный вход для потребителей)
+Optional: `TemplateEngine(..., enableTemplateCache: true)` caches `CompiledTemplate` by template string inside `Format`.
 
-Потребитель передаёт только:
+### 3.6. Client API (convenient entry for consumers)
 
-1. **Строку шаблона** с плейсхолдерами `{...}` (например, `quest.Description` из данных).
-2. **`IValueProvider` контекст** — откуда читаются значения для плейсхолдеров.
+The consumer supplies only:
 
-Внутренний поток `Parse` → `Render` **не обязан** быть виден клиенту.
+1. **Template string** with `{...}` placeholders (e.g. `quest.Description` from data).
+2. **`IValueProvider` context** — where placeholder values are read from.
 
-#### Метод `Format`
+The internal `Parse` → `Render` flow **does not** need to be visible to the client.
 
-**Сигнатура (instance, на `TemplateEngine`):**
+#### `Format` method
+
+**Signature (instance method on `TemplateEngine`):**
 
 ```csharp
 public string Format(string template, IValueProvider context, CultureInfo? culture = null);
 ```
 
-| Параметр | Назначение |
+| Parameter | Purpose |
 |---|---|
-| `template` | Исходная строка с `{placeholder}` |
-| `context` | Провайдер значений на время одного рендера (см. ниже) |
-| `culture` | Культура для `:format` (`F0`, `N2`, даты и т.д.); `null` → `CultureInfo.CurrentCulture` |
+| `template` | Source string with `{placeholder}` |
+| `context` | Value provider for one render (see below) |
+| `culture` | Culture for `:format` (`F0`, `N2`, dates, etc.); `null` → `CultureInfo.CurrentCulture` |
 
-**Поведение:** эквивалентно `Render(Parse(template), context, culture)`. Политика ошибок — из конструктора `TemplateEngine` (`ErrorPolicy`).
+**Behavior:** equivalent to `Render(Parse(template), context, culture)`. Error policy comes from the `TemplateEngine` constructor (`ErrorPolicy`).
 
-**Статический vs instance:** зафиксирован **instance-метод** — политика ошибок и будущие настройки движка привязаны к экземпляру. Общий сценарий: один shared `TemplateEngine` (например, с `ErrorPolicy.KeepPlaceholder` для UI) или локальный экземпляр с дефолтами.
+**Static vs instance:** **instance method** is fixed — error policy and future engine settings are bound to the instance. Typical usage: one shared `TemplateEngine` (e.g. with `ErrorPolicy.KeepPlaceholder` for UI) or a local instance with defaults.
 
-**Кэширование `CompiledTemplate`:** в MVP `Format` может парсить шаблон при каждом вызове. Опционально позже — внутренний кэш по строке шаблона или явный API «скомпилировать один раз» через `Parse` + `Render`.
+**`CompiledTemplate` caching:** by default `Format` parses the template on every call. Pass `enableTemplateCache: true` to cache by template string, or use explicit `Parse` + `Render` for full control.
 
-#### Контекст для клиента
+#### Context for the client
 
-Клиент собирает **один** `IValueProvider` на область рендера (например, текущая игра + активный квест), а не отдельные словари на каждый плейсхолдер.
+The client builds **one** `IValueProvider` per render scope (e.g. current game + active quest), not separate dictionaries per placeholder.
 
 ```csharp
-// Пример: описание квеста
+// Example: quest description
 var text = engine.Format(quest.Description, context);
 ```
 
-**Будущее (не MVP):** составной провайдер или тип вроде `QuestGameContext`, который объединяет корень квеста (`kill_count`, `weapons[0]`, …) и игровой корень (`player.gold_balance`) в одном `IValueProvider` — клиент по-прежнему передаёт один `context`.
+**Future (not MVP):** a composite provider or type such as `QuestGameContext` that merges quest root (`kill_count`, `weapons[0]`, …) and game root (`player.gold_balance`) into one `IValueProvider` — the client still passes a single `context`.
 
-#### Когда нужен `Parse` / `Render`
+#### When to use `Parse` / `Render`
 
-| Сценарий | API |
+| Scenario | API |
 |---|---|
-| Разовая подстановка (описания, подсказки, лог) | `Format` |
-| Один шаблон рендерится много раз с разным контекстом | `Parse` → сохранить `CompiledTemplate` → `Render` в цикле |
-| Кэш скомпилированных шаблонов в игре | `Parse` при загрузке, `Render` при обновлении UI |
+| One-off substitution (descriptions, tooltips, logs) | `Format` |
+| Same template rendered many times with different context | `Parse` → store `CompiledTemplate` → `Render` in a loop |
+| Cache compiled templates in a game | `Parse` on load, `Render` on UI update |
 
 ---
 
-## 4. Интерфейсы (скетч)
+## 4. Interfaces (sketch)
 
 ```csharp
-namespace custom_parser;
+namespace CustomParser;
 
 // ── Engine ──
 
@@ -201,50 +203,73 @@ public enum ErrorPolicy { Throw, Empty, KeepPlaceholder }
 
 public sealed class TemplateEngine
 {
-    public TemplateEngine(ErrorPolicy errorPolicy = ErrorPolicy.Throw);
+    public TemplateEngine(ErrorPolicy errorPolicy = ErrorPolicy.Throw, bool enableTemplateCache = false);
 
-    /// <summary>Основной клиентский API: Parse + Render за один вызов.</summary>
+    /// <summary>Primary client API: Parse + Render in one call.</summary>
     public string Format(string template, IValueProvider context, CultureInfo? culture = null);
 
-    /// <summary>Performance path: разбор один раз, рендер многократно.</summary>
+    /// <summary>Performance path: parse once, render many times.</summary>
     public CompiledTemplate Parse(string template);
     public string Render(CompiledTemplate compiled, IValueProvider context, CultureInfo? culture = null);
 }
 
 public sealed class CompiledTemplate
 {
-    // Immutable; безопасен для кэширования и многопоточного чтения.
+    // Immutable; safe for caching and concurrent reads.
     internal IReadOnlyList<TemplateSegment> Segments { get; }
 }
 
 // ── Value Provider ──
 
+namespace CustomParser.Resolver;
+
 public interface IValueProvider
 {
-    object? GetValue(string key);
-    object? GetIndex(object? target, int index);
-    object? GetMember(object? target, string member);
+    bool TryGetValue(string key, out object? value);
+    bool TryGetIndex(object? target, int index, out object? value);
+    bool TryGetMember(object? target, string member, out object? value);
 }
 
 public sealed class DictionaryValueProvider : IValueProvider
 {
     public DictionaryValueProvider(IReadOnlyDictionary<string, object?> data);
-    // GetIndex: target is IList / array
-    // GetMember: target — Dictionary<string, object?> only (no POCO reflection)
+    // TryGetIndex / TryGetMember delegate to MemberAccessor (see below).
+}
+
+public sealed class CompositeValueProvider : IValueProvider
+{
+    public CompositeValueProvider(params IValueProvider[] providers);
+    // First provider that succeeds wins for each TryGet* call.
+}
+
+/// <summary>
+/// Default nested access for dictionary/list targets — no POCO reflection.
+/// </summary>
+public static class MemberAccessor
+{
+    public static bool TryGetIndex(object? target, int index, out object? value);
+    // IList only (arrays implement IList).
+
+    public static bool TryGetMember(object? target, string member, out object? value);
+    // IDictionary&lt;string, object?&gt; only — no reflection on arbitrary objects.
 }
 
 // ── Lexer ──
+
+namespace CustomParser.Lexer;
 
 internal enum TokenKind { Literal, Placeholder }
 
 internal readonly record struct Token(TokenKind Kind, string Value, int Position);
 
-internal static class Lexer
+internal static class TemplateLexer
 {
     internal static IReadOnlyList<Token> Tokenize(string template);
 }
 
 // ── Parser ──
+
+namespace CustomParser.Parser;
 
 internal abstract record AstNode;
 
@@ -258,17 +283,19 @@ internal sealed record ParsedPlaceholder(AstNode Expression, string? Format);
 
 internal static class ExpressionParser
 {
-    internal static ParsedPlaceholder Parse(string placeholderContent);
+    internal static ParsedPlaceholder Parse(string placeholderContent, int position);
 }
 
 // ── Resolver ──
 
 internal static class ValueResolver
 {
-    internal static object? Resolve(AstNode node, IValueProvider context, ErrorPolicy policy);
+    internal static ResolveResult Resolve(AstNode node, IValueProvider context);
 }
 
 // ── Formatter ──
+
+namespace CustomParser.Formatter;
 
 internal static class ValueFormatter
 {
@@ -276,37 +303,39 @@ internal static class ValueFormatter
 }
 ```
 
+**Nested access policy:** `DictionaryValueProvider` uses `MemberAccessor` for `TryGetIndex` / `TryGetMember`. `MemberAccessor` supports `IList` (including arrays) and `IDictionary<string, object?>` only — **no reflection** on POCO properties. For model objects, implement `TryGetMember` / `TryGetIndex` on custom providers (see QuestDemo sample).
+
 ---
 
-## 5. Политика ошибок
+## 5. Error policy
 
-Настраивается через `ErrorPolicy` при создании `TemplateEngine`. Применяется на этапе **Render** (ошибки разрешения/форматирования) и **Parse** (синтаксические ошибки — всегда `Throw`).
+Configured via `ErrorPolicy` when creating `TemplateEngine`. Applied at **Render** (resolution/formatting errors) and **Parse** (syntax errors — always `Throw`).
 
-| Политика | Поведение при ошибке разрешения |
+| Policy | Behavior on resolution failure |
 |---|---|
-| `Throw` | `TemplateRenderException` с позицией и именем плейсхолдера |
-| `Empty` | Пустая строка `""` |
-| `KeepPlaceholder` | Исходный текст `{...}` без изменений |
+| `Throw` | `TemplateRenderException` with position and placeholder text |
+| `Empty` | Empty string `""` |
+| `KeepPlaceholder` | Original `{...}` text unchanged |
 
-**Parse-time ошибки** (незакрытая `{`, невалидное выражение) — всегда исключение, независимо от политики.
+**Parse-time errors** (unclosed `{`, invalid expression) — always throw `TemplateParseException`, regardless of policy.
 
-**Null-значения:** не ошибка; форматируются как пустая строка (или `"null"` — зафиксировано: **пустая строка**).
+**Null values:** not an error; formatted as an empty string (fixed: **empty string**, not `"null"`).
 
 ---
 
-## 6. Культура
+## 6. Culture
 
-`CultureInfo` передаётся в `Format(..., culture)` и `Render(..., culture)`.
+`CultureInfo` is passed to `Format(..., culture)` and `Render(..., culture)`.
 
 - `culture == null` → `CultureInfo.CurrentCulture`.
-- Используется только в `Formatter` (числа, даты).
-- **Когда важно для клиента:** плейсхолдеры с числовым/денежным форматом (`{price:N2}`, `{amount:C}`) — разделители тысяч и символ валюты зависят от культуры; для фиксированного отображения (отладка, экспорт) передайте `CultureInfo.InvariantCulture` явно.
+- Used only in `Formatter` (numbers, dates).
+- **When it matters for clients:** placeholders with numeric/currency format (`{price:N2}`, `{amount:C}`) — thousand separators and currency symbols depend on culture; for fixed display (debug, export) pass `CultureInfo.InvariantCulture` explicitly.
 
 ---
 
 ## 7. MVP vs Future
 
-| Возможность | MVP | Future |
+| Feature | MVP | Future |
 |---|---|---|
 | `{name}` | ✅ | |
 | `{obj.field}` | ✅ | |
@@ -322,58 +351,58 @@ internal static class ValueFormatter
 | `IValueProvider` | ✅ | |
 | `ErrorPolicy` | ✅ | |
 | `CultureInfo` | ✅ | |
-| Вложенные плейсхолдеры | | ✅ |
-| Арифметика / функции | | ✅ |
-| Кастомные форматтеры | | ✅ |
+| Nested placeholders | | ✅ |
+| Arithmetic / functions | | ✅ |
+| Custom formatters | | ✅ |
 | Async Render | | ✅ |
 
 ---
 
-## 8. Примеры
+## 8. Examples
 
-### 8.1. Базовый
-
-```
-Шаблон:  "Hello, {name}!"
-Контекст: { "name" → "Alice" }
-Результат: "Hello, Alice!"
-```
-
-### 8.2. Член, индекс и смешанные цепочки
+### 8.1. Basic
 
 ```
-Шаблон:  "HP detail: {player.stats.health}"
-Контекст: { "player" → { stats → { health → 85 } } }
-Результат: "HP detail: 85"
-
-Шаблон:  "Weapon: {weapons[0].name} (dmg: {weapons[0].damage})"
-Контекст: { "weapons" → [ { name: "Sword", damage: 10 }, ... ] }
-Результат: "Weapon: Sword (dmg: 10)"
-
-Шаблон:  "Item: {items[0].stats[1].name}"
-Контекст: { "items" → [ { stats → [ ..., { name: "Ruby" } ] } ] }
-Результат: "Item: Ruby"
+Template:  "Hello, {name}!"
+Context:   { "name" → "Alice" }
+Result:    "Hello, Alice!"
 ```
 
-### 8.3. Формат
+### 8.2. Member, index, and mixed chains
 
 ```
-Шаблон:  "HP: {player_health:F0}/{player_health_max:F0}"
-Контекст: { "player_health" → 85.7, "player_health_max" → 100 }
-Результат: "HP: 86/100"
+Template:  "HP detail: {player.stats.health}"
+Context:   { "player" → { stats → { health → 85 } } }
+Result:    "HP detail: 85"
+
+Template:  "Weapon: {weapons[0].name} (dmg: {weapons[0].damage})"
+Context:   { "weapons" → [ { name: "Sword", damage: 10 }, ... ] }
+Result:    "Weapon: Sword (dmg: 10)"
+
+Template:  "Item: {items[0].stats[1].name}"
+Context:   { "items" → [ { stats → [ ..., { name: "Ruby" } ] } ] }
+Result:    "Item: Ruby"
 ```
 
-### 8.4. Экранирование
+### 8.3. Format
 
 ```
-Шаблон:  "{{name}} = {name}"
-Результат: "{name} = Alice"
+Template:  "HP: {player_health:F0}/{player_health_max:F0}"
+Context:   { "player_health" → 85.7, "player_health_max" → 100 }
+Result:    "HP: 86/100"
+```
+
+### 8.4. Escaping
+
+```
+Template:  "{{name}} = {name}"
+Result:    "{name} = Alice"
 ```
 
 ### 8.5. ErrorPolicy
 
 ```
-Шаблон:  "Score: {missing_score}"
+Template:  "Score: {missing_score}"
 KeepPlaceholder → "Score: {missing_score}"
 Empty           → "Score: "
 Throw           → TemplateRenderException
@@ -381,7 +410,7 @@ Throw           → TemplateRenderException
 
 ---
 
-## 9. Структура проекта
+## 9. Project structure
 
 ```
 custom-parser/
@@ -390,35 +419,39 @@ custom-parser/
 ├── CustomParser.sln
 ├── docs/
 │   └── SPEC.md
-├── src/CustomParser/          ← NuGet-ready библиотека (namespace CustomParser)
+├── src/CustomParser/              ← NuGet-ready library (namespace CustomParser)
+│   ├── CustomParser.csproj        ← net8.0; netstandard2.0 (Unity)
 │   ├── Engine/
 │   ├── Lexer/
 │   ├── Parser/
 │   ├── Formatter/
-│   └── Resolver/              ← IValueProvider, DictionaryValueProvider, …
-├── samples/QuestDemo/         ← демо квестов (Exe)
+│   ├── Resolver/                  ← IValueProvider, DictionaryValueProvider, MemberAccessor, …
+│   └── Polyfills/                 ← netstandard2.0 shims (e.g. IsExternalInit)
+├── samples/QuestDemo/             ← quest description demo (Exe, net8.0)
 │   ├── Program.cs
 │   ├── Models/
-│   └── Resolver/              ← QuestValueProvider, QuestGameContext, …
+│   └── Resolver/                  ← QuestValueProvider, QuestGameContext, …
 └── tests/CustomParser.Tests/
 ```
 
 ---
 
-## 10. Зафиксированные решения (чеклист)
+## 10. Fixed decisions (checklist)
 
-- [x] Lexer — state machine, не regex
-- [x] Client API: `Format(template, context)` — Parse + Render без знания внутренностей
+- [x] Lexer — state machine, not regex
+- [x] Client API: `Format(template, context)` — Parse + Render without exposing internals
 - [x] Parse once → `CompiledTemplate`, Render many (performance path)
-- [x] `IValueProvider` + `DictionaryValueProvider` по умолчанию
+- [x] `IValueProvider` + `DictionaryValueProvider` by default
+- [x] `MemberAccessor` — `IList` + `IDictionary<string, object?>` only; no POCO reflection
 - [x] `ErrorPolicy`: Throw / Empty / KeepPlaceholder
-- [x] `CultureInfo` в `Render`
-- [x] Lexer знает синтаксис, Resolver знает данные, Formatter знает форматирование
-- [x] MVP expression: `accessPath` — identifier + произвольная цепочка `.member` / `[int]`
-- [x] MVP index: только integer literal ≥ 0
-- [x] Format отделяется до парсинга expression
-- [x] Null → пустая строка
+- [x] `CultureInfo` in `Render`
+- [x] Lexer knows syntax, Resolver knows data, Formatter knows formatting
+- [x] MVP expression: `accessPath` — identifier + arbitrary `.member` / `[int]` chain
+- [x] MVP index: integer literal ≥ 0 only
+- [x] Format split before expression parsing
+- [x] Null → empty string
 - [x] Parse errors → always throw
+- [x] Multi-target: netstandard2.0 + net8.0
 
 ---
 
@@ -426,13 +459,13 @@ custom-parser/
 
 Quest `Description` strings in `Models` use **snake_case** logical placeholder paths for localization (`kill_count`, `weapons`, `currencies`, `player.gold_balance`). They need not match C# property names (`KillCount`, `GoldBalance`); a future quest-aware resolver may alias or bind case-insensitively.
 
-**Рендер в клиенте:** один вызов `Format` с контекстом, покрывающим и квест, и игру:
+**Client rendering:** one `Format` call with a context covering both quest and game:
 
 ```csharp
 var description = engine.Format(quest.Description, context);
 ```
 
-Здесь `context` — один `IValueProvider` на область «игра + текущий квест» (см. §3.6); отдельно вызывать `Parse`/`Render` для типичного UI не требуется.
+Here `context` is one `IValueProvider` for the "game + current quest" scope (see §3.6); typical UI does not need separate `Parse`/`Render` calls.
 
 | Scope | Convention | Example |
 |---|---|---|
