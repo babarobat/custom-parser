@@ -92,10 +92,43 @@ For flat key–value maps only, `DictionaryValueProvider` covers simple `{key}` 
 
 ## Install
 
+The library targets **netstandard2.0** (Unity) and **net8.0** (.NET). **Unity UPM** is the supported consumer install today; NuGet is not on the gallery yet.
+
+### Unity (primary)
+
+Add to your project `Packages/manifest.json` **dependencies**:
+
+```json
+"com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.0"
+```
+
+This installs a **DLL-only** package — not editable source in the Unity tree. Fork the [repository](https://github.com/babarobat/custom-parser) or embed source if you need to change behavior. **JetBrains Rider** can show decompiled C# when you navigate into the assembly.
+
+Requires Unity **2021.2+** (see package `package.json`). For nested paths in Unity, implement `TryGetMember` / `TryGetIndex` on providers (see QuestDemo); flat `{key}` roots work with `DictionaryValueProvider`.
+
+### .NET from this repo (developers)
+
+Clone the monorepo and reference the project:
+
+```bash
+dotnet add reference path/to/custom-parser/src/CustomParser/CustomParser.csproj
+```
+
+Or in your `.csproj`:
+
+```xml
+<ProjectReference Include="..\custom-parser\src\CustomParser\CustomParser.csproj" />
+```
+
+### NuGet
+
+**Not published yet** — [nuget.org/packages/CustomParser](https://www.nuget.org/packages/CustomParser) returns 404. When it is on the gallery:
+
 ```bash
 dotnet add package CustomParser
-# or: dotnet add reference src/CustomParser/CustomParser.csproj
 ```
+
+Maintainers: `dotnet pack src/CustomParser/CustomParser.csproj -c Release`, then push the `.nupkg` per [Publish a package to NuGet.org](https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package).
 
 ## Build and test
 
@@ -104,34 +137,6 @@ dotnet build CustomParser.sln
 dotnet test CustomParser.sln
 dotnet run --project samples/QuestDemo/QuestDemo.csproj
 ```
-
-## Unity
-
-The library multi-targets **netstandard2.0** (Unity) and **net8.0** (modern .NET).
-
-### Unity (UPM via Git)
-
-Add to your project `Packages/manifest.json` **dependencies**:
-
-```json
-"com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.0"
-```
-
-This installs a **DLL-only** package (`Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll`) — not editable source in the Unity tree. To change behavior, fork the [repository](https://github.com/babarobat/custom-parser) or reference the .NET project directly. **JetBrains Rider** can still show decompiled C# when you navigate into the assembly for reading.
-
-Requires Unity **2021.2** or newer (see package `package.json`).
-
-### Manual DLL or source embed
-
-**Prebuilt DLL:** After `dotnet build src/CustomParser/CustomParser.csproj -c Release -f netstandard2.0`, copy:
-
-`src/CustomParser/bin/Release/netstandard2.0/CustomParser.dll`
-
-into your Unity project (for example `Assets/Plugins/CustomParser/`).
-
-**Source embed:** Add the `src/CustomParser` folder (all `.cs` files, including `Polyfills/`) to a Unity assembly definition or `Assets/Scripts`. Unity 2021.2+ with Roslyn supports the language features used (C# 10, records).
-
-**Nested paths:** `DictionaryValueProvider` resolves nested segments only through `IDictionary<string, object?>` and `IList` (via `MemberAccessor`). POCO properties are not read automatically — implement `TryGetMember` / `TryGetIndex` on your providers (see QuestDemo). Flat `{key}` roots need only a dictionary or custom `TryGetValue`.
 
 ## License
 
