@@ -31,6 +31,25 @@ public sealed class QuestValueProvider : IValueProvider
     public bool TryGetIndex(object? target, int index, out object? value) =>
         MemberAccessor.TryGetIndex(target, index, out value);
 
-    public bool TryGetMember(object? target, string member, out object? value) =>
-        MemberAccessor.TryGetMember(target, member, out value);
+    public bool TryGetMember(object? target, string member, out object? value)
+    {
+        if (target is CurrencyAmount currency)
+        {
+            switch (member)
+            {
+                case "amount":
+                    value = currency.Amount;
+                    return true;
+                case "name":
+                    value = currency.Name;
+                    return true;
+                case "currency_id":
+                    value = currency.CurrencyId;
+                    return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
 }

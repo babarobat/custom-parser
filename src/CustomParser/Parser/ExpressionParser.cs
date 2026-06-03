@@ -10,8 +10,8 @@ internal static class ExpressionParser
 
         if (colonIndex >= 0)
         {
-            expressionPart = placeholderContent[..colonIndex];
-            format = placeholderContent[(colonIndex + 1)..];
+            expressionPart = placeholderContent.Substring(0, colonIndex);
+            format = placeholderContent.Substring(colonIndex + 1);
         }
         else
         {
@@ -70,7 +70,7 @@ internal static class ExpressionParser
         while (index < expression.Length && IsIdentifierPart(expression[index]))
             index++;
 
-        return expression[start..index];
+        return expression.Substring(start, index - start);
     }
 
     private static int ReadIndex(string expression, ref int index, int position)
@@ -82,7 +82,7 @@ internal static class ExpressionParser
         while (index < expression.Length && char.IsDigit(expression[index]))
             index++;
 
-        var text = expression[start..index];
+        var text = expression.Substring(start, index - start);
         if (!int.TryParse(text, out var value) || value < 0)
             throw new TemplateParseException("Index must be a non-negative integer.", position + start);
 

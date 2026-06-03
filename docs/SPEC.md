@@ -230,7 +230,7 @@ public sealed class DictionaryValueProvider : IValueProvider
 {
     public DictionaryValueProvider(IReadOnlyDictionary<string, object?> data);
     // GetIndex: target is IList / array
-    // GetMember: target — reflection или Dictionary<string, object?>
+    // GetMember: target — Dictionary<string, object?> only (no POCO reflection)
 }
 
 // ── Lexer ──

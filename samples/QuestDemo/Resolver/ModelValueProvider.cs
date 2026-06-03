@@ -25,6 +25,22 @@ public sealed class ModelValueProvider : IValueProvider
     public bool TryGetIndex(object? target, int index, out object? value) =>
         MemberAccessor.TryGetIndex(target, index, out value);
 
-    public bool TryGetMember(object? target, string member, out object? value) =>
-        MemberAccessor.TryGetMember(target, member, out value);
+    public bool TryGetMember(object? target, string member, out object? value)
+    {
+        if (target is PlayerProfile player)
+        {
+            switch (member)
+            {
+                case "gold_balance":
+                    value = player.GoldBalance;
+                    return true;
+                case "health":
+                    value = player.Health;
+                    return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
 }

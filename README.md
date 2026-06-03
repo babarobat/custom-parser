@@ -105,6 +105,20 @@ dotnet test CustomParser.sln
 dotnet run --project samples/QuestDemo/QuestDemo.csproj
 ```
 
+## Unity
+
+The library multi-targets **netstandard2.0** (Unity) and **net8.0** (modern .NET).
+
+**Prebuilt DLL:** After `dotnet build src/CustomParser/CustomParser.csproj`, copy:
+
+`src/CustomParser/bin/Debug/netstandard2.0/CustomParser.dll`
+
+into your Unity project (for example `Assets/Plugins/CustomParser/`). Use the **Release** output path when shipping.
+
+**Source embed:** Add the `src/CustomParser` folder (all `.cs` files, including `Polyfills/`) to a Unity assembly definition or `Assets/Scripts`. Unity 2021.2+ with Roslyn supports the language features used (C# 10, records).
+
+**Nested paths:** `DictionaryValueProvider` resolves nested segments only through `IDictionary<string, object?>` and `IList` (via `MemberAccessor`). POCO properties are not read automatically — implement `TryGetMember` / `TryGetIndex` on your providers (see QuestDemo). Flat `{key}` roots need only a dictionary or custom `TryGetValue`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

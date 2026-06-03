@@ -5,7 +5,7 @@ internal static class TemplateLexer
     internal static IReadOnlyList<Token> Tokenize(string template)
     {
         if (template.Length == 0)
-            return [];
+            return Array.Empty<Token>();
 
         var tokens = new List<Token>();
         var literal = new System.Text.StringBuilder();
