@@ -102,7 +102,7 @@ Add to your project `Packages/manifest.json` **dependencies**:
 
 This installs a **DLL-only** package (`Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll`) — not editable source in the Unity tree. To change behavior, fork the [repository](https://github.com/babarobat/custom-parser) or embed the `src/CustomParser` sources in your project. **JetBrains Rider** can still show decompiled C# when you navigate into the assembly for reading.
 
-The UPM folder ships with committed Unity `.meta` files so assets are recognized in Unity’s immutable `Packages/` cache. **v1.0.0** lacked those metas and assets were ignored; pin **`#v1.0.2`** (or newer) instead of `#v1.0.0`.
+Maintainers: open this repo's UPM folder in an empty Unity project and commit Unity-generated `.meta` files (do not hand-write GUIDs). Consumers: pin **`#v1.0.2`** (or newer); **v1.0.0** lacked metas and assets were ignored.
 
 Requires Unity **2021.2** or newer (see package `package.json`).
 
