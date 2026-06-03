@@ -361,3 +361,14 @@ custom-parser/
 - [x] Format отделяется до парсинга expression
 - [x] Null → пустая строка
 - [x] Parse errors → always throw
+
+---
+
+## Appendix A. Quest description templates (sample data)
+
+Quest `Description` strings in `Models` use **snake_case** logical placeholder paths for localization (`kill_count`, `weapons`, `currencies`, `player.gold_balance`). They need not match C# property names (`KillCount`, `GoldBalance`); a future quest-aware resolver may alias or bind case-insensitively.
+
+| Scope | Convention | Example |
+|---|---|---|
+| Quest root | Placeholders resolve against the quest instance | `{kill_count}`, `{weapons[0]}`, `{currencies[0].name}` |
+| Game root | Cross-cutting values prefix with `player.` | `{player.gold_balance}` |
