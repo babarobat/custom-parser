@@ -3,19 +3,20 @@ using custom_parser.Models;
 namespace custom_parser.Resolver;
 
 /// <summary>
-/// Render scope for quest descriptions (game + quest). Stub: not used until resolver is implemented.
+/// Convenience context combining quest-scoped and game-scoped value providers (SPEC §3.6).
 /// </summary>
 public sealed class QuestGameContext : IValueProvider
 {
-    public QuestGameContext(GameModel game, Quest quest)
-    {
-        _ = game;
-        _ = quest;
-    }
+    private readonly CompositeValueProvider _inner;
 
-    public object? GetValue(string key) => null;
+    public QuestGameContext(GameModel game, Quest quest) =>
+        _inner = new CompositeValueProvider(new QuestValueProvider(quest), new ModelValueProvider(game));
 
-    public object? GetIndex(object? target, int index) => null;
+    public bool TryGetValue(string key, out object? value) => _inner.TryGetValue(key, out value);
 
-    public object? GetMember(object? target, string member) => null;
+    public bool TryGetIndex(object? target, int index, out object? value) =>
+        _inner.TryGetIndex(target, index, out value);
+
+    public bool TryGetMember(object? target, string member, out object? value) =>
+        _inner.TryGetMember(target, member, out value);
 }

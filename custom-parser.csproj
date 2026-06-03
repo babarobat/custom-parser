@@ -8,4 +8,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="custom-parser.Tests\**" />
+    <None Remove="custom-parser.Tests\**" />
+    <EmbeddedResource Remove="custom-parser.Tests\**" />
+    <InternalsVisibleTo Include="custom-parser.Tests" />
+  </ItemGroup>
+
 </Project>

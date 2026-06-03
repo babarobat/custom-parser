@@ -3,7 +3,7 @@ using custom_parser.Models;
 using custom_parser.Resolver;
 
 var game = GameModel.CreateSample();
-var engine = new TemplateEngine();
+var engine = new TemplateEngine(enableTemplateCache: true);
 
 foreach (var quest in game.Quests)
 {

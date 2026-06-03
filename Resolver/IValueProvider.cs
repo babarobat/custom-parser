@@ -2,9 +2,9 @@ namespace custom_parser.Resolver;
 
 public interface IValueProvider
 {
-    object? GetValue(string key);
+    bool TryGetValue(string key, out object? value);
 
-    object? GetIndex(object? target, int index);
+    bool TryGetIndex(object? target, int index, out object? value);
 
-    object? GetMember(object? target, string member);
+    bool TryGetMember(object? target, string member, out object? value);
 }
