@@ -1,6 +1,6 @@
 {
   "name": "com.babarobat.custom-parser",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "displayName": "Custom Parser",
   "description": "Named-placeholder string template engine for Unity and .NET. Precompiled DLL; see repository for source and documentation.",
   "unity": "2021.2",
@@ -16,3 +16,4 @@
     "url": "https://github.com/babarobat/custom-parser.git"
   }
 }
+

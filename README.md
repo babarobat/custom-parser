@@ -97,12 +97,12 @@ For flat key–value maps only, `DictionaryValueProvider` covers simple `{key}` 
 Add to your project `Packages/manifest.json` **dependencies**:
 
 ```json
-"com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.2"
+"com.babarobat.custom-parser": "https://github.com/babarobat/custom-parser.git?path=Packages/com.babarobat.custom-parser#v1.0.3"
 ```
 
 This installs a **DLL-only** package (`Packages/com.babarobat.custom-parser/Runtime/CustomParser.dll`) — not editable source in the Unity tree. To change behavior, fork the [repository](https://github.com/babarobat/custom-parser) or embed the `src/CustomParser` sources in your project. **JetBrains Rider** can still show decompiled C# when you navigate into the assembly for reading.
 
-Maintainers: open this repo's UPM folder in an empty Unity project and commit Unity-generated `.meta` files (do not hand-write GUIDs). Consumers: pin **`#v1.0.2`** (or newer); **v1.0.0** lacked metas and assets were ignored.
+Maintainers: open this repo's UPM folder in an empty Unity project and commit Unity-generated `.meta` files (do not hand-write GUIDs). Consumers: pin **`#v1.0.3`** (or newer); **v1.0.0** lacked metas and assets were ignored.
 
 Requires Unity **2021.2** or newer (see package `package.json`).
 
