@@ -385,25 +385,22 @@ Throw           → TemplateRenderException
 
 ```
 custom-parser/
+├── LICENSE
+├── README.md
+├── CustomParser.sln
 ├── docs/
-│   └── SPEC.md              ← этот документ
-├── Engine/
-│   ├── TemplateEngine.cs
-│   ├── CompiledTemplate.cs
-│   └── ErrorPolicy.cs
-├── Lexer/
-│   ├── Lexer.cs
-│   └── Token.cs
-├── Parser/
-│   ├── ExpressionParser.cs
-│   └── AstNodes.cs
-├── Resolver/
-│   ├── IValueProvider.cs
-│   ├── DictionaryValueProvider.cs
-│   └── ValueResolver.cs
-├── Formatter/
-│   └── ValueFormatter.cs
-└── Program.cs               ← демо / тесты (временно)
+│   └── SPEC.md
+├── src/CustomParser/          ← NuGet-ready библиотека (namespace CustomParser)
+│   ├── Engine/
+│   ├── Lexer/
+│   ├── Parser/
+│   ├── Formatter/
+│   └── Resolver/              ← IValueProvider, DictionaryValueProvider, …
+├── samples/QuestDemo/         ← демо квестов (Exe)
+│   ├── Program.cs
+│   ├── Models/
+│   └── Resolver/              ← QuestValueProvider, QuestGameContext, …
+└── tests/CustomParser.Tests/
 ```
 
 ---
